@@ -57,21 +57,7 @@ class MyScalatraServlet extends ScalatraServlet  with CorsSupport  {
     main_kitchen.insert(order)
     Ok("ordered")
 
-  }
-  get("/kitchen"){
-    //render all everything in db
-    contentType = "application/json"
-//    val james_ex = (("id"->"5") ~ ("food"->"burger") ~ ("status" -> "waiting"))
-//    compact(render(james_ex))
-//----------------------------
-//    val eiei = MongoDBObject( "id"-> 1 )
-    val allDocs = main_kitchen.find()
-    println( "kitchen" )
-//    val eiei = for(doc <- allDocs)
-//    for(doc <- allDocs) println( doc )
 
-    val r: Seq[Map[String, AnyRef]] = allDocs.toVector.map{_.toVector}.map{_.toMap}
-    Ok(Serialization.write(r))
   }
 
   post("/update_kitchen/:id/:food/:status"){
@@ -99,6 +85,23 @@ class MyScalatraServlet extends ScalatraServlet  with CorsSupport  {
 
     Ok("updated from table")
   }
+  ///////////////////////////////////////////////////////////////////////////////////////////////////----------------------------------------------------------------
+
+  get("/kitchen"){
+    //render all everything in db
+    contentType = "application/json"
+    //    val james_ex = (("id"->"5") ~ ("food"->"burger") ~ ("status" -> "waiting"))
+    //    compact(render(james_ex))
+    //----------------------------
+    //    val eiei = MongoDBObject( "id"-> 1 )
+    val allDocs = main_kitchen.find()
+    println( "kitchen" )
+    //    val eiei = for(doc <- allDocs)
+    //    for(doc <- allDocs) println( doc )
+
+    val r: Seq[Map[String, AnyRef]] = allDocs.toVector.map{_.toVector}.map{_.toMap}
+    Ok(Serialization.write(r))
+  }
 
   get("/eachtable/:id"){
     //assume to get table id 1
@@ -108,6 +111,10 @@ class MyScalatraServlet extends ScalatraServlet  with CorsSupport  {
     val allDocss = main_kitchen.find( eiei )
     val r: Seq[Map[String, AnyRef]] = allDocss.toVector.map{_.toVector}.map{_.toMap}
     Ok(Serialization.write(r))
+  }
+
+  get("/check_id/:id"){
+    
   }
 
 
