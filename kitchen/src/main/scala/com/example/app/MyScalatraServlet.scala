@@ -2,6 +2,7 @@ package com.example.app
 
 import org.scalatra._
 import org.json4s.jackson.Serialization
+import java.util.UUID
 
 import org.scalatra.json.JacksonJsonSupport
 import org.json4s.jackson.JsonMethods._
@@ -22,9 +23,10 @@ import com.mongodb.casbah.Imports.DBObject
 
 //import scalate.ScalateSupport
 //import net.liftweb.json._
-case class someModel(id: Int, food: String, status: String);
-case class someModel_1(food: String,price:Int,id: String, status: String);
-case class All(list: List[someModel])
+//case class someModel(id: Int, food: String, status: String);
+case class someModel_1(food: String,price:Int,id: Int, status: String);
+case class model_2(UUID: String, food: String, id: Int, price: Int, status: String, trash: ObjectId)
+//case class All(list: List[someModel])
 case class whole()
 
 case class User(name: String, emails: List[String])
@@ -69,16 +71,16 @@ class MyScalatraServlet extends ScalatraServlet  with CorsSupport  {
 
 
   post("/order"){
+    def generateUniqueId = UUID.randomUUID().toString
 
     val json = request.body
-//    val json = """
-//      [
-//        {"name": "Foo", "emails": ["Foo@gmail.com", "foo2@gmail.com"]},
-//        {"name": "Bar", "emails": ["Bar@gmail.com", "bar@gmail.com"]}
-//      ]
-//    """
-//    println(json)
+
     val obj = parse(json).extract[(List[someModel_1])]
+
+    for (a <- 0 to obj.size-1 ){
+      val eiei = MongoDBObject("id"->obj(a).id, "food"->obj(a).food, "status"->obj(a).status, "price"->obj(a).price, "UUID"->generateUniqueId)
+      main_kitchen.insert(eiei)
+    }
 //    val obj = parse(json).extract[someModel]
     println(obj.size)
 
@@ -92,10 +94,7 @@ class MyScalatraServlet extends ScalatraServlet  with CorsSupport  {
 //    println(obj)
 
 
-    for (a <- 0 to obj.size-1 ){
-      val eiei = MongoDBObject("id"->obj(a).id,"food"->obj(a).food,"status"->obj(a).status)
-      main_kitchen.insert(eiei)
-    }
+
 //    println(obj(1).id)
 //    main_kitchen.insert(MongoDBObject(jso))
 
@@ -138,15 +137,23 @@ class MyScalatraServlet extends ScalatraServlet  with CorsSupport  {
     Ok("ordered")
   }
 
+  put("/upkit"){
+    val json = request.body
+    val obj = parse(json).extract[(List[model_2])]
+    val uuid_1 = obj(0).UUID
+    val status_1 = obj(0).status
+
+  }
 
 
-  post("/update_kitchen/:id/:food/:status"){
+
+  put("/update_kitchen/:id/:status"){
     //update "status"
     val id = params("id")
-    val food = params("food")
+//    val food = params("food")
     val status = params("status")
 
-    val update_1 = MongoDBObject( "id"-> id.toInt, "food"-> food )
+    val update_1 = MongoDBObject( "UUID"-> id )
     val update_2 = $set( "status" -> status )
     main_kitchen.update(update_1, update_2)
 
@@ -175,7 +182,7 @@ class MyScalatraServlet extends ScalatraServlet  with CorsSupport  {
     //----------------------------
     //    val eiei = MongoDBObject( "id"-> 1 )
     val allDocs = main_kitchen.find()
-    println( "kitchen" )
+//    println( "kitchen" )
     //    val eiei = for(doc <- allDocs)
     //    for(doc <- allDocs) println( doc )
 
@@ -201,7 +208,8 @@ class MyScalatraServlet extends ScalatraServlet  with CorsSupport  {
       idpw.insert(eiei)
     }
     else{
-      response.addHeader("status","error")
+//      response.addHeader("status","error")
+      response.sendError(400, "error")
 //      response.
     }
   }
