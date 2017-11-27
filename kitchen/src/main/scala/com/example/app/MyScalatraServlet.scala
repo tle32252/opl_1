@@ -17,9 +17,23 @@ import org.json4s._
 import org.json4s.jackson.JsonMethods._
 
 import com.mongodb.casbah.Imports._
-
+import scala.util.parsing.json._
 import com.mongodb.casbah.Imports.DBObject
 
+//import scalate.ScalateSupport
+//import net.liftweb.json._
+case class someModel(id: Int, food: String, status: String);
+case class someModel_1(food: String,price:Int,id: String, status: String);
+case class All(list: List[someModel])
+case class whole()
+
+case class User(name: String, emails: List[String])
+
+case class UserList(users: List[User]) {
+  override def toString(): String = {
+    this.users.foldLeft("")((a, b) => a + b.toString)
+  }
+}
 
 class MyScalatraServlet extends ScalatraServlet  with CorsSupport  {
 
@@ -39,6 +53,7 @@ class MyScalatraServlet extends ScalatraServlet  with CorsSupport  {
   val main_kitchen = db("main_kitchen")
 
 
+
   get("/:name") {
     views.html.hello()
     Ok("aaaaaadddsdsdaaaa")
@@ -48,20 +63,85 @@ class MyScalatraServlet extends ScalatraServlet  with CorsSupport  {
     val jsonStringLogin = request.body
     println(jsonStringLogin)
     Ok("Login :)")
+    response.addHeader("sdsd","sdsd")
   }
-  ///////////////////////////////////////////////////////////////////////////////////////////////////----------------------------------------------------------------
+  ///////////////////////////////////////////////////////////////////////////////////////////////////
+
+
   post("/order"){
-    val jsonStringOrder = request.body
-    val order = MongoDBObject(jsonStringOrder)
 
-    main_kitchen.insert(order)
+    val json = request.body
+//    val json = """
+//      [
+//        {"name": "Foo", "emails": ["Foo@gmail.com", "foo2@gmail.com"]},
+//        {"name": "Bar", "emails": ["Bar@gmail.com", "bar@gmail.com"]}
+//      ]
+//    """
+//    println(json)
+    val obj = parse(json).extract[(List[someModel_1])]
+//    val obj = parse(json).extract[someModel]
+    println(obj.size)
+
+
+
+//    val jsonStringOrder = request.body
+//
+//    val json = parse(request.body)
+//    val ip = json.extract[All]
+//    println(jsonStringOrder)
+//    println(obj)
+
+
+    for (a <- 0 to obj.size-1 ){
+      val eiei = MongoDBObject("id"->obj(a).id,"food"->obj(a).food,"status"->obj(a).status)
+      main_kitchen.insert(eiei)
+    }
+//    println(obj(1).id)
+//    main_kitchen.insert(MongoDBObject(jso))
+
+//    println(jsonStringOrder)
+//    val ee = parse(jsonStringOrder).extract[(String,String,String)]
+//    println(ee)
+//    val ip = jsonStringOrder.extract[(String,String,String)]
+//    println(ip)
+//    val jsonStringOrder_1 = MongoDBObject(parse(request.body).children)
+
+//    println(jsonStringOrder_1.getClass)
+
+//    println(jsonStringOrder.getClass)
+//    println(jsonStringOrder)
+//    println("hi"+jsonStringOrder)
+//    println("YO "+request.body)
+//    for(doc <- json) {
+//      println(doc)
+////      for (echdoc <- doc.children){
+////        println(echdoc.)
+////      }
+////      val doc2 = MongoDBObject(doc.toString)
+//      main_kitchen.insert(doc)
+//
+//
+////      println("DOC "+doc.toString.getClass)
+////      println(doc.id)
+//
+////      val eiei2 = MongoDBObject(eiei)
+////          println(eiei2.getClass)
+////      main_kitchen.insert(MongoDB)
+////      println(eiei2)
+//    }
+
+//    val list = List(eiei_1)
+//    val order = MongoDBList(eiei_1:_*)
+
+//    main_kitchen.insert(MongoDBObject(doc))
+//    println(jsonStringOrder_1)
     Ok("ordered")
-
-
   }
+
+
 
   post("/update_kitchen/:id/:food/:status"){
-    //update "status" table id 1 and food burger from waiting to cooking
+    //update "status"
     val id = params("id")
     val food = params("food")
     val status = params("status")
@@ -75,6 +155,7 @@ class MyScalatraServlet extends ScalatraServlet  with CorsSupport  {
   }
 
   post("/update_table/:id/:food/:food_2"){
+    //update "food"
     val id = params("id")
     val food = params("food")
     val food_2 = params("food_2")
@@ -82,10 +163,9 @@ class MyScalatraServlet extends ScalatraServlet  with CorsSupport  {
     val update_1 = MongoDBObject( "id" -> id.toInt, "food" -> food )
     val update_2 = $set( "food" -> food_2 )
     main_kitchen.update(update_1, update_2)
-
     Ok("updated from table")
   }
-  ///////////////////////////////////////////////////////////////////////////////////////////////////----------------------------------------------------------------
+  ///////////////////////////////////////////////////////////////////////////////////////////////////
 
   get("/kitchen"){
     //render all everything in db
@@ -114,7 +194,16 @@ class MyScalatraServlet extends ScalatraServlet  with CorsSupport  {
   }
 
   get("/check_id/:id"){
-    
+    val id = params("id")
+    val eiei = MongoDBObject( "id"-> id.toInt )
+//    println(idpw.findOne(eiei))
+    if (idpw.findOne(eiei) == None){
+      idpw.insert(eiei)
+    }
+    else{
+      response.addHeader("status","error")
+//      response.
+    }
   }
 
 
