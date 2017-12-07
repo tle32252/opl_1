@@ -22,13 +22,9 @@ import com.mongodb.casbah.Imports._
 import scala.util.parsing.json._
 import com.mongodb.casbah.Imports.DBObject
 
-//import scalate.ScalateSupport
-//import net.liftweb.json._
-//case class someModel(id: Int, food: String, status: String);
+
 case class someModel_1(kind: String, food: String, price:Int, id: Int, status: String);
 case class model_2(UUID: String, food: String, id: Int, price: Int, status: String, trash: ObjectId)
-//case class All(list: List[someModel])
-case class whole()
 
 case class User(name: String, emails: List[String])
 
@@ -56,236 +52,184 @@ class MyScalatraServlet extends ScalatraServlet  with CorsSupport  {
   val main_kitchen = db("main_kitchen")
   val cashier = db("backup")
 
-
-
+  ///////////////////////////////////////////////////////////////////////////////////////////////////
   get("/:name") {
     views.html.hello()
     Ok("aaaaaadddsdsdaaaa")
   }
-
-  post("/api/login"){
-    val jsonStringLogin = request.body
-    println(jsonStringLogin)
-    Ok("Login :)")
-    response.addHeader("sdsd","sdsd")
-  }
   ///////////////////////////////////////////////////////////////////////////////////////////////////
 
 
+
+
+  /////////////////////////////////////////////////TABLE/////////////////////////////////////////////
+
+  //check whether that number has already been used
+  get("/check_id/:id"){
+    val id = params("id")
+    val table_no = MongoDBObject( "id"-> id.toInt )
+    if (idpw.findOne(table_no) == None){
+      idpw.insert(table_no)
+      Ok("true")
+    }
+    else{
+      Ok("false")
+    }
+  }
+
+  // post the order from the table
   post("/order"){
     def generateUniqueId = UUID.randomUUID().toString
 
     val json = request.body
-    val e = request.body.getClass
-//    println(e)
-
-
     val obj = parse(json).extract[(List[someModel_1])]
 
     for (a <- 0 to obj.size-1 ){
       val d = Instant.now.getEpochSecond
-      val eiei = MongoDBObject("id"->obj(a).id, "food"->obj(a).food, "status"->obj(a).status, "price"->obj(a).price, "UUID"->generateUniqueId, "kind"->obj(a).kind, "time"->d )
-      main_kitchen.insert(eiei)
+      val info = MongoDBObject("id"->obj(a).id, "food"->obj(a).food, "status"->obj(a).status, "price"->obj(a).price, "UUID"->generateUniqueId, "kind"->obj(a).kind, "time"->d )
+      main_kitchen.insert(info)
     }
-//    val obj = parse(json).extract[someModel]
-//    println(obj.size)
-
-
-
-//    val jsonStringOrder = request.body
-//
-//    val json = parse(request.body)
-//    val ip = json.extract[All]
-//    println(jsonStringOrder)
-//    println(obj)
-
-
-
-//    println(obj(1).id)
-//    main_kitchen.insert(MongoDBObject(jso))
-
-//    println(jsonStringOrder)
-//    val ee = parse(jsonStringOrder).extract[(String,String,String)]
-//    println(ee)
-//    val ip = jsonStringOrder.extract[(String,String,String)]
-//    println(ip)
-//    val jsonStringOrder_1 = MongoDBObject(parse(request.body).children)
-
-//    println(jsonStringOrder_1.getClass)
-
-//    println(jsonStringOrder.getClass)
-//    println(jsonStringOrder)
-//    println("hi"+jsonStringOrder)
-//    println("YO "+request.body)
-//    for(doc <- json) {
-//      println(doc)
-////      for (echdoc <- doc.children){
-////        println(echdoc.)
-////      }
-////      val doc2 = MongoDBObject(doc.toString)
-//      main_kitchen.insert(doc)
-//
-//
-////      println("DOC "+doc.toString.getClass)
-////      println(doc.id)
-//
-////      val eiei2 = MongoDBObject(eiei)
-////          println(eiei2.getClass)
-////      main_kitchen.insert(MongoDB)
-////      println(eiei2)
-//    }
-
-//    val list = List(eiei_1)
-//    val order = MongoDBList(eiei_1:_*)
-
-//    main_kitchen.insert(MongoDBObject(doc))
-//    println(jsonStringOrder_1)
     Ok("ordered")
   }
 
-  put("/upkit"){
-    val json = request.body
-    val obj = parse(json).extract[(List[model_2])]
-    val uuid_1 = obj(0).UUID
-    val status_1 = obj(0).status
+  //each table can monitor their food
+  get("/eachtable/:id"){
+    contentType = "application/json"
 
-  }
-
-
-
-  put("/update_kitchen/:id/:status"){
-    //update "status"
     val id = params("id")
-//    val food = params("food")
-    val status = params("status")
+    val table_id = MongoDBObject( "id"-> id.toInt )
+    val sort_by_time = MongoDBObject("time" -> 1)
+    val allDocss = main_kitchen.find( table_id ).sort(sort_by_time)
 
-    val update_1 = MongoDBObject( "UUID"-> id )
-    val update_2 = $set( "status" -> status )
-    main_kitchen.update(update_1, update_2)
-
-    Ok("updated from kitchen")
-
+    val r: Seq[Map[String, AnyRef]] = allDocss.toVector.map{_.toVector}.map{_.toMap}
+    Ok(Serialization.write(r))
   }
 
-  post("/update_table/:id/:food/:food_2"){
-    //update "food"
+  //check waitaing by uuid
+  get("/check_waiting/:id"){
     val id = params("id")
-    val food = params("food")
-    val food_2 = params("food_2")
-
-    val update_1 = MongoDBObject( "id" -> id.toInt, "food" -> food )
-    val update_2 = $set( "food" -> food_2 )
-    main_kitchen.update(update_1, update_2)
-    Ok("updated from table")
+    val that_food = MongoDBObject( "UUID"-> id )
+    val search = main_kitchen.find(that_food)
+//    val ans = search.toList.toVector(3)
+    var ans = ""
+    for(doc <- search){
+      var bbb = doc.toList(3)._2
+      ans = bbb.toString
+    }
+    if (ans == "Waiting"){
+      Ok("true")
+    }
+    else{
+      Ok("false")
+    }
   }
 
+
+
+  //customers want to remove that food
   delete("/delfood/:id"){
     val id = params("id")
     val update_1 = MongoDBObject( "UUID"-> id )
     main_kitchen.remove(update_1)
 
   }
-  ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-  get("/kitchen"){
-    //render all everything in db
-    contentType = "application/json"
-    //    val james_ex = (("id"->"5") ~ ("food"->"burger") ~ ("status" -> "waiting"))
-    //    compact(render(james_ex))
-    //----------------------------
-    //    val eiei = MongoDBObject( "id"-> 1 )
-
-    val eiei = MongoDBObject("kind"->"food")
-    val sorttt = MongoDBObject("time"-> 1)
-    val allDocs = main_kitchen.find(eiei).sort( sorttt)
-//    println( "kitchen" )
-    //    val eiei = for(doc <- allDocs)
-    //    for(doc <- allDocs) println( doc )
-
-    val r: Seq[Map[String, AnyRef]] = allDocs.toVector.map{_.toVector}.map{_.toMap}
-    Ok(Serialization.write(r))
-  }
-
-  get("/dessert"){
-    //render all everything in db
-    contentType = "application/json"
-    //    val james_ex = (("id"->"5") ~ ("food"->"burger") ~ ("status" -> "waiting"))
-    //    compact(render(james_ex))
-    //----------------------------
-    //    val eiei = MongoDBObject( "id"-> 1 )
-    val sorttt = MongoDBObject("time"-> 1)
-    val eiei = MongoDBObject("kind"->"dessert")
-    val allDocs = main_kitchen.find(eiei).sort(sorttt)
-    //    println( "kitchen" )
-    //    val eiei = for(doc <- allDocs)
-    //    for(doc <- allDocs) println( doc )
-
-    val r: Seq[Map[String, AnyRef]] = allDocs.toVector.map{_.toVector}.map{_.toMap}
-    Ok(Serialization.write(r))
-  }
-
-
-
-  get("/eachtable/:id"){
-    //assume to get table id 1
-
-    val id = params("id")
-    val eiei = MongoDBObject( "id"-> id.toInt )
-    val sort = MongoDBObject("time" -> 1)
-    val allDocss = main_kitchen.find( eiei ).sort(sort)
-    val r: Seq[Map[String, AnyRef]] = allDocss.toVector.map{_.toVector}.map{_.toMap}
-    Ok(Serialization.write(r))
-  }
-
-  get("/check_id/:id"){
-    val id = params("id")
-    val eiei = MongoDBObject( "id"-> id.toInt )
-//    println(idpw.findOne(eiei))
-    if (idpw.findOne(eiei) == None){
-      idpw.insert(eiei)
-      Ok("true")
-    }
-    else{
-//      response.addHeader("status","error")
-      Ok("false")
-//      response.sendError(400, "error")
-//      response.
-    }
-  }
-
-
-
+  //calculate amount customer needs to pay
   get("/check_out/:id"){
     val id = params("id")
-    val eiei = MongoDBObject( "id"-> id.toInt )
-    val search = main_kitchen.find(eiei)
+    val table_no = MongoDBObject( "id"-> id.toInt )
+    val search = main_kitchen.find(table_no)
 
     var ans = 0
-    var count = 0
     for(doc <- search) {
       var e = doc.toList(4)._2
-//      println(e.getClass())
       ans = ans + e.asInstanceOf[Int]
-      count += 1
     }
-
-    val amount = MongoDBObject("id"-> id.toInt , "status"->"Unpaid","amount"->ans)
-//    cashier.insert(amount)
-
     Ok(ans)
-
   }
+
+  ///////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+  //////////////////////////////////KITCHEN/////////////////////////////////////////////////////////
+
+  //kitchen see allll
+  get("/kitchen"){
+    contentType = "application/json"
+
+    val kind = MongoDBObject("kind"->"food")
+    val sort_by_time = MongoDBObject("time"-> 1)
+    val allDocs = main_kitchen.find(kind).sort( sort_by_time )
+
+    val r: Seq[Map[String, AnyRef]] = allDocs.toVector.map{_.toVector}.map{_.toMap}
+    Ok(Serialization.write(r))
+  }
+
+  //kitchen can update the status of each food by looking at UUID
+  put("/update_kitchen/:id/:status"){
+    val id = params("id")
+    val status = params("status")
+
+    val update_1 = MongoDBObject( "UUID"-> id )
+    val update_2 = $set( "status" -> status )
+
+    main_kitchen.update(update_1, update_2)
+
+    Ok("updated from kitchen")
+  }
+
+  post("/update_table/:id/:food/:food_2"){
+    val id = params("id")
+    val food = params("food")
+    val food_2 = params("food_2")
+
+    val update_1 = MongoDBObject( "id" -> id.toInt, "food" -> food )
+    val update_2 = $set( "food" -> food_2 )
+
+    main_kitchen.update(update_1, update_2)
+    Ok("updated from table")
+  }
+
+
+  ////////////////////////////////////KITCHEN-DESERT///////////////////////////////////////////////////
+
+  // all information of every table in the kitchen-desert side
+  get("/dessert"){
+    contentType = "application/json"
+
+    val kind = MongoDBObject("kind"->"dessert")
+    val sort_by_time = MongoDBObject("time"-> 1)
+    val allDocs = main_kitchen.find(kind).sort(sort_by_time)
+
+    val r: Seq[Map[String, AnyRef]] = allDocs.toVector.map{_.toVector}.map{_.toMap}
+    Ok(Serialization.write(r))
+  }
+
+  /////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+  //////////////////////////////////////////CASHIER///////////////////////////////////////////////////
+
+  //all information of every table in the cashier side
+  get("/cashier"){
+    contentType = "application/json"
+    val allDocs = cashier.find()
+    val r: Seq[Map[String, AnyRef]] = allDocs.toVector.map{_.toVector}.map{_.toMap}
+    Ok(Serialization.write(r))
+  }
+
+
+  //when
   post("/check_out_1/:id"){
     def generateUniqueId = UUID.randomUUID().toString
     val id = params("id")
-    val eiei = MongoDBObject( "id"-> id.toInt )
-    val search = main_kitchen.find(eiei)
+    val table_no = MongoDBObject( "id"-> id.toInt )
+    val search = main_kitchen.find(table_no)
 
     var ans = 0
     var count = 0
     for(doc <- search) {
       var e = doc.toList(4)._2
-      //      println(e.getClass())
       ans = ans + e.asInstanceOf[Int]
       count += 1
     }
@@ -295,20 +239,26 @@ class MyScalatraServlet extends ScalatraServlet  with CorsSupport  {
 
 
   }
+
+  //for cashier to view the menu of that table
+  get("/info_cashier/:id"){
+    val id = params("id")
+    val table_no = MongoDBObject( "id"-> id.toInt )
+    val sort_by_time = MongoDBObject("time" -> 1)
+    val allDocss = main_kitchen.find( table_no ).sort(sort_by_time)
+    val r: Seq[Map[String, AnyRef]] = allDocss.toVector.map{_.toVector}.map{_.toMap}
+    Ok(Serialization.write(r))
+
+  }
+
   delete("/check_out_2/:id"){
     val id = params("id")
-    val eiei = MongoDBObject( "id"-> id.toInt )
-    main_kitchen.remove(eiei)
+    val table_no = MongoDBObject( "id"-> id.toInt )
+//    main_kitchen.remove(table_no)
   }
 
-  get("/cashier"){
-    contentType = "application/json"
-    val allDocs = cashier.find()
 
-    val r: Seq[Map[String, AnyRef]] = allDocs.toVector.map{_.toVector}.map{_.toMap}
-    Ok(Serialization.write(r))
-  }
-
+  //cashier update status from unpaid to paid
   post("/cashier_update/:id/:status"){
     val id = params("id")
     val status = params("status")
@@ -320,11 +270,6 @@ class MyScalatraServlet extends ScalatraServlet  with CorsSupport  {
     Ok("updated cashier")
 
   }
-
-
-
-
-
 }
 
 
