@@ -24,7 +24,7 @@ import com.mongodb.casbah.Imports.DBObject
 
 
 case class someModel_1(kind: String, food: String, price:Int, id: Int, status: String);
-case class model_2(UUID: String, food: String, id: Int, price: Int, status: String, trash: ObjectId)
+//case class model_2(UUID: String, food: String, id: Int, price: Int, status: String, trash: ObjectId)
 
 case class User(name: String, emails: List[String])
 
@@ -51,6 +51,7 @@ class MyScalatraServlet extends ScalatraServlet  with CorsSupport  {
   val idpw = db("idpw")
   val main_kitchen = db("main_kitchen")
   val cashier = db("backup")
+//  val copy_1 = db("cashier")
 
   ///////////////////////////////////////////////////////////////////////////////////////////////////
   get("/:name") {
@@ -84,11 +85,21 @@ class MyScalatraServlet extends ScalatraServlet  with CorsSupport  {
     val json = request.body
     val obj = parse(json).extract[(List[someModel_1])]
 
+
     for (a <- 0 to obj.size-1 ){
       val d = Instant.now.getEpochSecond
-      val info = MongoDBObject("id"->obj(a).id, "food"->obj(a).food, "status"->obj(a).status, "price"->obj(a).price, "UUID"->generateUniqueId, "kind"->obj(a).kind, "time"->d )
+      val info = MongoDBObject("id"->obj(a).id, "food"->obj(a).food, "status"->obj(a).status, "price"->obj(a).price, "UUID"->generateUniqueId, "kind"->obj(a).kind, "time"->d)
       main_kitchen.insert(info)
+//      copy_1.insert(info)
+
     }
+
+//    for (a <- 0 to obj.size-1 ){
+//      val d = Instant.now.getEpochSecond
+//      val info = MongoDBObject("id"->obj(a).id, "food"->obj(a).food, "status"->obj(a).status, "price"->obj(a).price, "UUID"->generateUniqueId, "kind"->obj(a).kind, "time"->d)
+//      copy_1.insert(info)
+//
+//    }
     Ok("ordered")
   }
 
@@ -105,6 +116,20 @@ class MyScalatraServlet extends ScalatraServlet  with CorsSupport  {
     Ok(Serialization.write(r))
   }
 
+//  get("/eachtable_2/:id"){
+//    contentType = "application/json"
+//
+//    val id = params("id")
+//    val table_id = MongoDBObject( "id"-> id.toInt )
+//    val sort_by_time = MongoDBObject("time" -> 1)
+//    val allDocss = copy_1.find( table_id ).sort(sort_by_time)
+//
+//    val r: Seq[Map[String, AnyRef]] = allDocss.toVector.map{_.toVector}.map{_.toMap}
+//    Ok(Serialization.write(r))
+//  }
+
+
+
   //check waitaing by uuid
   get("/check_waiting/:id"){
     val id = params("id")
@@ -116,23 +141,64 @@ class MyScalatraServlet extends ScalatraServlet  with CorsSupport  {
       var bbb = doc.toList(3)._2
       ans = bbb.toString
     }
+    println(ans)
+//    if (ans == "Waiting"){
+//      Ok("true")
+//    }
+//    else{
+//      Ok("false")
+//    }
+  }
+
+
+
+  //customers want to remove that food and check the status of that food as well whether it is still waiting
+  //since we did not refresh every single sec.
+  delete("/delfood/:id"){
+    val id = params("id")
+    val update_1 = MongoDBObject( "UUID"-> id )
+    val search = main_kitchen.find(update_1)
+    var ans = ""
+    for(doc <- search){
+      var status = doc.toList(3)._2
+      ans = status.toString
+    }
+    println("222"+ans)
+
     if (ans == "Waiting"){
-      Ok("true")
+      main_kitchen.remove(update_1)
+//      copy_1.remove(update_1)
+      Ok("You food has been cancelled.")
     }
     else{
       Ok("false")
     }
-  }
-
-
-
-  //customers want to remove that food
-  delete("/delfood/:id"){
-    val id = params("id")
-    val update_1 = MongoDBObject( "UUID"-> id )
-    main_kitchen.remove(update_1)
+    //main_kitchen.remove(update_1)
 
   }
+
+//  delete("/delfood_2/:id"){
+//    val id = params("id")
+//    val update_1 = MongoDBObject( "UUID"-> id )
+//    val search = copy_1.find(update_1)
+//    var ans = ""
+//    for(doc <- search){
+//      var status = doc.toList(3)._2
+//      ans = status.toString
+//    }
+//    println("33333333")
+//    println(ans)
+//    if (ans == "Waiting"){
+////      main_kitchen.remove(update_1)
+//      copy_1.remove(update_1)
+//      Ok("From cashier")
+//    }
+//    else{
+//      Ok("false")
+//    }
+//    //main_kitchen.remove(update_1)
+//
+//  }
 
   //calculate amount customer needs to pay
   get("/check_out/:id"){
@@ -225,6 +291,7 @@ class MyScalatraServlet extends ScalatraServlet  with CorsSupport  {
     val id = params("id")
     val table_no = MongoDBObject( "id"-> id.toInt )
     val search = main_kitchen.find(table_no)
+//    db.clone()
 
     var ans = 0
     var count = 0
@@ -245,7 +312,7 @@ class MyScalatraServlet extends ScalatraServlet  with CorsSupport  {
     val id = params("id")
     val table_no = MongoDBObject( "id"-> id.toInt )
     val sort_by_time = MongoDBObject("time" -> 1)
-    val allDocss = main_kitchen.find( table_no ).sort(sort_by_time)
+    val allDocss = cashier.find( table_no ).sort(sort_by_time)
     val r: Seq[Map[String, AnyRef]] = allDocss.toVector.map{_.toVector}.map{_.toMap}
     Ok(Serialization.write(r))
 
@@ -254,7 +321,8 @@ class MyScalatraServlet extends ScalatraServlet  with CorsSupport  {
   delete("/check_out_2/:id"){
     val id = params("id")
     val table_no = MongoDBObject( "id"-> id.toInt )
-//    main_kitchen.remove(table_no)
+    main_kitchen.remove(table_no)
+//    main_kitchen.cop
   }
 
 
