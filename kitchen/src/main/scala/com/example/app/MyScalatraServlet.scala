@@ -61,8 +61,6 @@ class MyScalatraServlet extends ScalatraServlet  with CorsSupport  {
   ///////////////////////////////////////////////////////////////////////////////////////////////////
 
 
-
-
   /////////////////////////////////////////////////TABLE/////////////////////////////////////////////
 
   //check whether that number has already been used
@@ -90,16 +88,8 @@ class MyScalatraServlet extends ScalatraServlet  with CorsSupport  {
       val d = Instant.now.getEpochSecond
       val info = MongoDBObject("id"->obj(a).id, "food"->obj(a).food, "status"->obj(a).status, "price"->obj(a).price, "UUID"->generateUniqueId, "kind"->obj(a).kind, "time"->d)
       main_kitchen.insert(info)
-//      copy_1.insert(info)
 
     }
-
-//    for (a <- 0 to obj.size-1 ){
-//      val d = Instant.now.getEpochSecond
-//      val info = MongoDBObject("id"->obj(a).id, "food"->obj(a).food, "status"->obj(a).status, "price"->obj(a).price, "UUID"->generateUniqueId, "kind"->obj(a).kind, "time"->d)
-//      copy_1.insert(info)
-//
-//    }
     Ok("ordered")
   }
 
@@ -116,18 +106,6 @@ class MyScalatraServlet extends ScalatraServlet  with CorsSupport  {
     Ok(Serialization.write(r))
   }
 
-//  get("/eachtable_2/:id"){
-//    contentType = "application/json"
-//
-//    val id = params("id")
-//    val table_id = MongoDBObject( "id"-> id.toInt )
-//    val sort_by_time = MongoDBObject("time" -> 1)
-//    val allDocss = copy_1.find( table_id ).sort(sort_by_time)
-//
-//    val r: Seq[Map[String, AnyRef]] = allDocss.toVector.map{_.toVector}.map{_.toMap}
-//    Ok(Serialization.write(r))
-//  }
-
 
 
   //check waitaing by uuid
@@ -142,14 +120,8 @@ class MyScalatraServlet extends ScalatraServlet  with CorsSupport  {
       ans = bbb.toString
     }
     println(ans)
-//    if (ans == "Waiting"){
-//      Ok("true")
-//    }
-//    else{
-//      Ok("false")
-//    }
-  }
 
+  }
 
 
   //customers want to remove that food and check the status of that food as well whether it is still waiting
@@ -163,12 +135,10 @@ class MyScalatraServlet extends ScalatraServlet  with CorsSupport  {
       var status = doc.toList(3)._2
       ans = status.toString
     }
-    println("222"+ans)
 
     if (ans == "Waiting"){
       main_kitchen.remove(update_1)
-//      copy_1.remove(update_1)
-      Ok("You food has been cancelled.")
+      Ok("Your food has been cancelled.")
     }
     else{
       Ok("false")
@@ -177,28 +147,6 @@ class MyScalatraServlet extends ScalatraServlet  with CorsSupport  {
 
   }
 
-//  delete("/delfood_2/:id"){
-//    val id = params("id")
-//    val update_1 = MongoDBObject( "UUID"-> id )
-//    val search = copy_1.find(update_1)
-//    var ans = ""
-//    for(doc <- search){
-//      var status = doc.toList(3)._2
-//      ans = status.toString
-//    }
-//    println("33333333")
-//    println(ans)
-//    if (ans == "Waiting"){
-////      main_kitchen.remove(update_1)
-//      copy_1.remove(update_1)
-//      Ok("From cashier")
-//    }
-//    else{
-//      Ok("false")
-//    }
-//    //main_kitchen.remove(update_1)
-//
-//  }
 
   //calculate amount customer needs to pay
   get("/check_out/:id"){
