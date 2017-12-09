@@ -83,7 +83,6 @@ class MyScalatraServlet extends ScalatraServlet  with CorsSupport  {
     val json = request.body
     val obj = parse(json).extract[(List[someModel_1])]
 
-
     for (a <- 0 to obj.size-1 ){
       val d = Instant.now.getEpochSecond
       val info = MongoDBObject("id"->obj(a).id, "food"->obj(a).food, "status"->obj(a).status, "price"->obj(a).price, "UUID"->generateUniqueId, "kind"->obj(a).kind, "time"->d)
@@ -233,13 +232,12 @@ class MyScalatraServlet extends ScalatraServlet  with CorsSupport  {
   }
 
 
-  //when
+  //add check out table to cashier db
   post("/check_out_1/:id"){
     def generateUniqueId = UUID.randomUUID().toString
     val id = params("id")
     val table_no = MongoDBObject( "id"-> id.toInt )
     val search = main_kitchen.find(table_no)
-//    db.clone()
 
     var ans = 0
     var count = 0
@@ -251,7 +249,6 @@ class MyScalatraServlet extends ScalatraServlet  with CorsSupport  {
 
     val amount = MongoDBObject("id"-> id.toInt ,"amount"->ans, "status"->"Unpaid","UUID"->generateUniqueId)
     cashier.insert(amount)
-
 
   }
 
@@ -266,11 +263,12 @@ class MyScalatraServlet extends ScalatraServlet  with CorsSupport  {
 
   }
 
+  //delete that table when check out
   delete("/check_out_2/:id"){
     val id = params("id")
     val table_no = MongoDBObject( "id"-> id.toInt )
     main_kitchen.remove(table_no)
-//    main_kitchen.cop
+
   }
 
 
